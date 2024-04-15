@@ -466,7 +466,7 @@ void BTree::DumpTreeInternal(BlockDumper& out, const ObjPtr<BTreeNode> &node)
 	if (!node)
 		return;
 
-	out.DumpNode(node->data(), node->paddr());
+	out.Dump(node->data(), node->paddr());
 
 	if (node->level() > 0)
 	{

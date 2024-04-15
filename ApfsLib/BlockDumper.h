@@ -42,36 +42,36 @@ public:
 	size_t GetBlockSize() const { return m_blocksize; }
 	void SetBlockSize(size_t size) { m_blocksize = size; }
 
-	void DumpNode(const uint8_t *block, uint64_t blk_nr);
+	void Dump(const uint8_t *block, uint64_t blk_nr);
 
 	std::ostream &st() { return m_os; }
 
 private:
 	typedef void(BlockDumper::*DumpFunc)(const void *key_ptr, size_t key_len, const void *val_ptr, size_t val_len, bool index);
 
-	void DumpNodeHeader(const obj_phys_t *blk, uint64_t blk_nr);
+	void DumpObjHeader(const obj_phys_t *blk, uint64_t blk_nr);
 	void DumpBTNode(DumpFunc func, uint16_t key_size = 0, uint16_t value_size = 0);
 	void DumpBTHeader(bool dump_offsets = false);
 	void DumpBTreeInfo();
 	// void DumpTableHeader(const APFS_TableHeader &tbl);
 
-	void DumpBlk_APSB();
-	void DumpBlk_CAB();
-	void DumpBlk_CIB();
-	void DumpBlk_OM();
-	void DumpBlk_CPM();
-	void DumpBlk_NXSB();
-	void DumpBlk_SM();
-	void DumpBlk_NR();
-	void DumpBlk_NRL();
-	void DumpBlk_JSDR();
-	void DumpBlk_ER();
+	void DumpAPSB();
+	void DumpCAB();
+	void DumpCIB();
+	void DumpOmap();
+	void DumpCPM();
+	void DumpNXSB();
+	void DumpSpaceman();
+	void DumpNxReaper();
+	void DumpNxReapList();
+	void DumpEfiJumpstart();
+	void DumpER();
 
-	void DumpBlk_WBC();
-	void DumpBlk_WBCL();
+	void DumpWBC();
+	void DumpWBCL();
 
-	void DumpBlk_SnapMetaExt();
-	void DumpBlk_IntegrityMeta();
+	void DumpSnapMetaExt();
+	void DumpIntegrityMeta();
 
 	void DumpBTNode_0();
 
@@ -98,7 +98,7 @@ private:
 	static std::string enumstr(uint64_t flag, const FlagDesc *desc);
 
 public:
-	static const char * GetNodeType(uint32_t type, uint32_t subtype);
+	static const char * GetObjType(uint32_t type, uint32_t subtype);
 
 private:
 	static std::string tstamp(uint64_t apfs_time);

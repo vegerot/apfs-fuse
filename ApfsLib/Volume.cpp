@@ -452,10 +452,10 @@ void Volume::dump(BlockDumper& bd)
 
 	bd.SetTextFlags(m_sb->apfs_incompatible_features & 0xFF);
 
-	bd.DumpNode(blk.data(), paddr());
+	bd.Dump(blk.data(), paddr());
 
 	ReadBlocks(blk.data(), m_sb->apfs_omap_oid, 1, 0);
-	bd.DumpNode(blk.data(), m_sb->apfs_omap_oid);
+	bd.Dump(blk.data(), m_sb->apfs_omap_oid);
 
 	{
 		const omap_phys_t *om = reinterpret_cast<const omap_phys_t*>(blk.data());
@@ -463,13 +463,13 @@ void Volume::dump(BlockDumper& bd)
 
 		if (omap_snapshot_tree_oid != 0) {
 			ReadBlocks(blk.data(), omap_snapshot_tree_oid, 1, 0);
-			bd.DumpNode(blk.data(), omap_snapshot_tree_oid);
+			bd.Dump(blk.data(), omap_snapshot_tree_oid);
 		}
 	}
 
 	if (m_sb->apfs_er_state_oid) {
 		ReadBlocks(blk.data(), m_sb->apfs_er_state_oid, 1, 0);
-		bd.DumpNode(blk.data(), m_sb->apfs_er_state_oid);
+		bd.Dump(blk.data(), m_sb->apfs_er_state_oid);
 	}
 
 	m_omap->tree().dump(bd);
@@ -481,7 +481,7 @@ void Volume::dump(BlockDumper& bd)
 		if (m_omap->lookup(m_sb->apfs_integrity_meta_oid, 0, &om_xid, &om_flags, &om_size, &om_paddr) == 0)
 		{
 			ReadBlocks(blk.data(), om_paddr, 1, 0);
-			bd.DumpNode(blk.data(), om_paddr);
+			bd.Dump(blk.data(), om_paddr);
 		}
 	}
 
@@ -489,7 +489,7 @@ void Volume::dump(BlockDumper& bd)
 		if (m_omap->lookup(m_sb->apfs_snap_meta_ext_oid, 0, &om_xid, &om_flags, &om_size, &om_paddr) == 0)
 		{
 			ReadBlocks(blk.data(), om_paddr, 1, 0);
-			bd.DumpNode(blk.data(), om_paddr);
+			bd.Dump(blk.data(), om_paddr);
 		}
 	}
 

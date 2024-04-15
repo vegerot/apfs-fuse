@@ -116,6 +116,7 @@ bool Dumper::DumpContainer(std::ostream &os)
 	std::vector<uint8_t> cxb_data;
 	std::vector<uint8_t> bmp_data;
 	std::vector<uint8_t> blk_data;
+	std::vector<uint8_t> xp_data;
 
 	const nx_superblock_t *nx = nullptr;
 	const checkpoint_map_phys_t *cpm = nullptr;
@@ -123,8 +124,11 @@ bool Dumper::DumpContainer(std::ostream &os)
 	const chunk_info_block_t *cib = nullptr;
 	const cib_addr_block_t *cab = nullptr;
 	const checkpoint_mapping_t *cm = nullptr;
+	const nx_superblock_t *xp_nxsb = nullptr;
 
 	uint64_t paddr;
+	xid_t max_xid;
+	paddr_t max_paddr;
 
 	uint64_t block_count;
 	uint32_t block_size;
@@ -151,7 +155,7 @@ bool Dumper::DumpContainer(std::ostream &os)
 	if (!Read(nx_data, 0, 1))
 		return false;
 
-	bd.DumpNode(nx_data.data(), 0);
+	bd.Dump(nx_data.data(), 0);
 
 	if (!VerifyBlock(nx_data.data(), nx_data.size()))
 	{
@@ -161,7 +165,37 @@ bool Dumper::DumpContainer(std::ostream &os)
 
 	nx = reinterpret_cast<const nx_superblock_t *>(nx_data.data());
 
-	// TODO: Scan xp_desc for most recent nxsb
+	// Scan xp_desc for most recent nxsb
+	max_xid = 0;
+	max_paddr = 0;
+
+	for (paddr = nx->nx_xp_desc_base; paddr < nx->nx_xp_desc_base + nx->nx_xp_desc_blocks; paddr++) {
+		if (!Read(xp_data, paddr, 1)) {
+			std::cerr << "Error reading XP block" << std::endl;
+			return false;
+		}
+		xp_nxsb = reinterpret_cast<const nx_superblock_t*>(xp_data.data());
+		if (xp_nxsb->nx_o.o_type != (OBJ_EPHEMERAL | OBJECT_TYPE_NX_SUPERBLOCK))
+			continue;
+		if (!VerifyBlock(xp_data.data(), xp_data.size()))
+			continue;
+		if (xp_nxsb->nx_o.o_xid > max_xid) {
+			max_xid = xp_nxsb->nx_o.o_xid;
+			max_paddr = paddr;
+		}
+	}
+
+	if (max_xid != nx->nx_o.o_xid)
+		std::cout << "NXSB@0 xid " << nx->nx_o.o_xid << " XP xid " << max_xid << std::endl;
+
+	if (!Read(nx_data, max_paddr, 1)) {
+		std::cerr << "Error reading nsxb from xp area" << std::endl;
+		return false;
+	}
+
+	nx = reinterpret_cast<const nx_superblock_t*>(nx_data.data());
+
+	bd.Dump(nx_data.data(), max_paddr);
 
 	// Get Check Point Info Block
 
@@ -171,7 +205,7 @@ bool Dumper::DumpContainer(std::ostream &os)
 		return false;
 	}
 
-	bd.DumpNode(cpm_data.data(), cpm_data.size());
+	bd.Dump(cpm_data.data(), nx->nx_xp_desc_base + nx->nx_xp_desc_index);
 
 	if (!VerifyBlock(cpm_data.data(), cpm_data.size()))
 		return false;
@@ -188,7 +222,7 @@ bool Dumper::DumpContainer(std::ostream &os)
 	if (!Read(sm_data, cm->cpm_paddr, cm->cpm_size / nx->nx_block_size))
 		return false;
 
-	bd.DumpNode(sm_data.data(), cm->cpm_paddr);
+	bd.Dump(sm_data.data(), cm->cpm_paddr);
 
 	if (!VerifyBlock(sm_data.data(), sm_data.size()))
 		return false;
@@ -286,12 +320,12 @@ bool Dumper::DumpContainer(std::ostream &os)
 					{
 						Read(blk_data, paddr + offs, 1);
 						if (VerifyBlock(blk_data.data(), m_blocksize))
-							bd.DumpNode(blk_data.data(), paddr + offs);
+							bd.Dump(blk_data.data(), paddr + offs);
 						else if (m_is_encrypted)
 						{
 							Decrypt(blk_data.data(), blk_data.size(), paddr + offs);
 							if (VerifyBlock(blk_data.data(), m_blocksize))
-								bd.DumpNode(blk_data.data(), paddr + offs);
+								bd.Dump(blk_data.data(), paddr + offs);
 						}
 					}
 
@@ -300,7 +334,6 @@ bool Dumper::DumpContainer(std::ostream &os)
 			}
 		}
 	}
-
 
 	return true;
 }
@@ -350,7 +383,7 @@ bool Dumper::DumpBlockList(std::ostream& os)
 			os << setw(4) << bt->btn_flags << " | ";
 			os << setw(4) << bt->btn_level << " | ";
 			os << setw(8) << bt->btn_nkeys << " | ";
-			os << BlockDumper::GetNodeType(o->o_type, o->o_subtype);
+			os << BlockDumper::GetObjType(o->o_type, o->o_subtype);
 			if ((o->o_type & OBJECT_TYPE_MASK) == OBJECT_TYPE_BTREE)
 				os << " [Root]";
 			os << endl;
@@ -396,7 +429,7 @@ bool Dumper::DumpBlockList(std::ostream& os)
 				os << setw(4) << bt->btn_flags << " | ";
 				os << setw(4) << bt->btn_level << " | ";
 				os << setw(8) << bt->btn_nkeys << " | ";
-				os << BlockDumper::GetNodeType(o->o_type, o->o_subtype);
+				os << BlockDumper::GetObjType(o->o_type, o->o_subtype);
 				if ((o->o_type & OBJECT_TYPE_MASK) == OBJECT_TYPE_BTREE)
 					os << " [Root]";
 				os << endl;

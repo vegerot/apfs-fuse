@@ -489,7 +489,7 @@ void Container::dump(BlockDumper& bd)
 	blk.resize(GetBlocksize());
 	ReadAndVerifyHeaderBlock(blk.data(), 0);
 
-	bd.DumpNode(blk.data(), 0);
+	bd.Dump(blk.data(), 0);
 
 #if 1
 	if (m_keymgr.IsValid())
@@ -551,12 +551,12 @@ void Container::dump(BlockDumper& bd)
 	if (m_nxsb->nx_efi_jumpstart)
 	{
 		ReadAndVerifyHeaderBlock(blk.data(), m_nxsb->nx_efi_jumpstart);
-		bd.DumpNode(blk.data(), m_nxsb->nx_efi_jumpstart);
+		bd.Dump(blk.data(), m_nxsb->nx_efi_jumpstart);
 	}
 
 	// TODO move to omap
 	ReadAndVerifyHeaderBlock(blk.data(), m_nxsb->nx_omap_oid);
-	bd.DumpNode(blk.data(), m_nxsb->nx_omap_oid);
+	bd.Dump(blk.data(), m_nxsb->nx_omap_oid);
 
 	m_fq_tree_mgr.dump(bd);
 	m_fq_tree_vol.dump(bd);

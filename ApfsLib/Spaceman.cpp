@@ -61,7 +61,7 @@ void Spaceman::dump(BlockDumper& d)
 	uint32_t blocksize = nx.GetBlocksize();
 
 	d.SetBlockSize(size());
-	d.DumpNode(data(), oid());
+	d.Dump(data(), oid());
 	d.SetBlockSize(blocksize);
 
 	blk.resize(blocksize);
@@ -120,7 +120,7 @@ void Spaceman::dump(BlockDumper& d)
 			for (cab_id = 0; cab_id < cab_cnt; cab_id++)
 			{
 				nx.ReadAndVerifyHeaderBlock(blk.data(), cxb_oid[cab_id]);
-				d.DumpNode(blk.data(), cxb_oid[cab_id]);
+				d.Dump(blk.data(), cxb_oid[cab_id]);
 
 				const cib_addr_block_t *cab = reinterpret_cast<cib_addr_block_t *>(blk.data());
 
@@ -137,7 +137,7 @@ void Spaceman::dump(BlockDumper& d)
 		for (cib_id = 0; cib_id < cib_cnt; cib_id++)
 		{
 			nx.ReadAndVerifyHeaderBlock(blk.data(), cib_oid_list[cib_id]);
-			d.DumpNode(blk.data(), cib_oid_list[cib_id]);
+			d.Dump(blk.data(), cib_oid_list[cib_id]);
 		}
 	}
 }

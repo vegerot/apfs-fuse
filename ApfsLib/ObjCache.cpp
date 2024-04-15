@@ -209,8 +209,10 @@ int ObjCache::readObj(Object& o, oid_t oid, xid_t xid, uint32_t type, uint32_t s
 	if (err) return err;
 
 	if (!(o_flags & OBJ_NOHEADER)) {
-		if (!VerifyBlock(o.m_data, o.m_size))
+		if (!VerifyBlock(o.m_data, o.m_size)) {
+			log_error("Object checksum verification failed!\n");
 			return EINVAL;
+		}
 	}
 
 	const obj_phys_t* p = reinterpret_cast<const obj_phys_t*>(o.m_data);

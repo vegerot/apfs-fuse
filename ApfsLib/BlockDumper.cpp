@@ -272,7 +272,7 @@ BlockDumper::~BlockDumper()
 {
 }
 
-void BlockDumper::DumpNode(const uint8_t *block, uint64_t blk_nr)
+void BlockDumper::Dump(const uint8_t *block, uint64_t blk_nr)
 {
 	using namespace std;
 
@@ -298,12 +298,12 @@ void BlockDumper::DumpNode(const uint8_t *block, uint64_t blk_nr)
 	}
 	*/
 
-	DumpNodeHeader(obj, blk_nr);
+	DumpObjHeader(obj, blk_nr);
 
 	switch (obj->o_type & OBJECT_TYPE_MASK)
 	{
 	case OBJECT_TYPE_NX_SUPERBLOCK: // NXSB Block
-		DumpBlk_NXSB();
+		DumpNXSB();
 		break;
 	case OBJECT_TYPE_BTREE: // BTree Root
 	case OBJECT_TYPE_BTREE_NODE: // BTree Node
@@ -311,58 +311,58 @@ void BlockDumper::DumpNode(const uint8_t *block, uint64_t blk_nr)
 		break;
 		// MTREE ?
 	case OBJECT_TYPE_SPACEMAN:
-		DumpBlk_SM();
+		DumpSpaceman();
 		break;
 	case OBJECT_TYPE_SPACEMAN_CAB:
-		DumpBlk_CAB();
+		DumpCAB();
 		break;
 	case OBJECT_TYPE_SPACEMAN_CIB: // Bitmap Block List
-		DumpBlk_CIB();
+		DumpCIB();
 		break;
 		/* 8 - A */
 	case OBJECT_TYPE_OMAP: // Pointer to Header (?)
-		DumpBlk_OM();
+		DumpOmap();
 		break;
 	case OBJECT_TYPE_CHECKPOINT_MAP: // Another Mapping
-		DumpBlk_CPM();
+		DumpCPM();
 		break;
 	case OBJECT_TYPE_FS: // APSB Block
-		DumpBlk_APSB();
+		DumpAPSB();
 		break;
 		/* E - 10 */
 	case OBJECT_TYPE_NX_REAPER:
-		DumpBlk_NR();
+		DumpNxReaper();
 		break;
 	case OBJECT_TYPE_NX_REAP_LIST:
-		DumpBlk_NRL();
+		DumpNxReapList();
 		break;
 
 	// case OBJECT_TYPE_OMAP_SNAPSHOT:
 
 	case OBJECT_TYPE_EFI_JUMPSTART:
-		DumpBlk_JSDR();
+		DumpEfiJumpstart();
 		break;
 
 	// case OBJECT_TYPE_FUSION_MIDDLE_TREE:
 
 	case OBJECT_TYPE_NX_FUSION_WBC:
-		DumpBlk_WBC();
+		DumpWBC();
 		break;
 
 	case OBJECT_TYPE_NX_FUSION_WBC_LIST:
-		DumpBlk_WBCL();
+		DumpWBCL();
 		break;
 
 	case OBJECT_TYPE_ER_STATE:
-		DumpBlk_ER();
+		DumpER();
 		break;
 
 	case OBJECT_TYPE_SNAP_META_EXT:
-		DumpBlk_SnapMetaExt();
+		DumpSnapMetaExt();
 		break;
 
 	case OBJECT_TYPE_INTEGRITY_META:
-		DumpBlk_IntegrityMeta();
+		DumpIntegrityMeta();
 		break;
 
 	// case OBJECT_TYPE_GBITMAP:
@@ -389,7 +389,7 @@ void BlockDumper::DumpNode(const uint8_t *block, uint64_t blk_nr)
 	m_block = nullptr;
 }
 
-void BlockDumper::DumpNodeHeader(const obj_phys_t *blk, uint64_t blk_nr)
+void BlockDumper::DumpObjHeader(const obj_phys_t *blk, uint64_t blk_nr)
 {
 	m_os << "[paddr]          | cksum            | oid              | xid              | type     | subtype  | description" << endl;
 	m_os << "-----------------+------------------+------------------+------------------+----------+----------+-----------------------" << endl;
@@ -400,7 +400,7 @@ void BlockDumper::DumpNodeHeader(const obj_phys_t *blk, uint64_t blk_nr)
 	m_os << setw(16) << blk->o_xid << " | ";
 	m_os << setw(8) << blk->o_type << " | ";
 	m_os << setw(8) << blk->o_subtype << " | ";
-	m_os << GetNodeType(blk->o_type, blk->o_subtype) << endl;
+	m_os << GetObjType(blk->o_type, blk->o_subtype) << endl;
 	m_os << endl;
 }
 
@@ -1205,7 +1205,7 @@ void BlockDumper::DumpBTEntry_FreeList(const void *key_ptr, size_t key_len, cons
 	m_os << key->sfqk_paddr << " => ";
 
 	if (!val_ptr)
-		m_os << "1/NULL" << endl;
+		m_os << "1 (Ghost)" << endl;
 	else
 		m_os << *reinterpret_cast<const uint64_t *>(val_ptr) << endl;
 }
@@ -1396,7 +1396,7 @@ void BlockDumper::Dump_XF(const uint8_t * xf_data, size_t xf_size, bool drec)
 	}
 }
 
-void BlockDumper::DumpBlk_APSB()
+void BlockDumper::DumpAPSB()
 {
 	const apfs_superblock_t * const sb = reinterpret_cast<const apfs_superblock_t *>(m_block);
 	int k;
@@ -1472,7 +1472,7 @@ void BlockDumper::DumpBlk_APSB()
 	}
 }
 
-void BlockDumper::DumpBlk_CAB()
+void BlockDumper::DumpCAB()
 {
 	const cib_addr_block_t * const cab = reinterpret_cast<const cib_addr_block_t *>(m_block);
 
@@ -1490,7 +1490,7 @@ void BlockDumper::DumpBlk_CAB()
 		dumpm("cib_addr  ", cab, cab->cab_cib_addr[k]);
 }
 
-void BlockDumper::DumpBlk_CIB()
+void BlockDumper::DumpCIB()
 {
 	const chunk_info_block_t * const cib = reinterpret_cast<const chunk_info_block_t *>(m_block);
 
@@ -1513,7 +1513,7 @@ void BlockDumper::DumpBlk_CIB()
 	}
 }
 
-void BlockDumper::DumpBlk_OM()
+void BlockDumper::DumpOmap()
 {
 	const omap_phys_t * const om = reinterpret_cast<const omap_phys_t *>(m_block);
 
@@ -1548,7 +1548,7 @@ void BlockDumper::DumpBlk_OM()
 	}
 }
 
-void BlockDumper::DumpBlk_CPM()
+void BlockDumper::DumpCPM()
 {
 	const checkpoint_map_phys_t * const cpm = reinterpret_cast<const checkpoint_map_phys_t *>(m_block);
 
@@ -1573,7 +1573,7 @@ void BlockDumper::DumpBlk_CPM()
 	}
 }
 
-void BlockDumper::DumpBlk_NXSB()
+void BlockDumper::DumpNXSB()
 {
 	const nx_superblock_t * const nx = reinterpret_cast<const nx_superblock_t *>(m_block);
 	size_t k;
@@ -1650,7 +1650,7 @@ void BlockDumper::DumpBlk_NXSB()
 	DumpBlockHex();
 }
 
-void BlockDumper::DumpBlk_SM()
+void BlockDumper::DumpSpaceman()
 {
 	size_t d;
 	size_t k;
@@ -1722,20 +1722,9 @@ void BlockDumper::DumpBlk_SM()
 		}
 	}
 
-	/*
-	for (k = 0; k < 0x10; k++)
-		dumpm("?                   ", b, b->unk_160[k]);
-	m_os << endl;
-	*/
-
-	/*
-	const le<uint16_t> *unk_arr = reinterpret_cast<const le<uint16_t> *>(m_block + b->sm_struct_size);
-	for (k = 0; k < b->ip_bitmap_block_count; k++)
-		dumpm("?                   ", b, unk_arr[k]);
-		*/
-
 	for (d = 0; d < SD_COUNT; d++)
 	{
+		m_os << endl;
 		m_os << "Device " << devstr[d] << " blocks:" << std::endl;
 		if (b->sm_dev[d].sm_cab_count > 0)
 			cnt = b->sm_dev[d].sm_cab_count;
@@ -1749,44 +1738,28 @@ void BlockDumper::DumpBlk_SM()
 			for (k = 0; k < cnt; k++)
 				dumpm("addr                ", b, addr[k]);
 		}
-
-		m_os << endl;
 	}
+	m_os << endl;
 
-#if 0
-	if (b->unk_144 != 0)
-	{
-		const le_uint64_t &unk_xid = *reinterpret_cast<const le_uint64_t *>(m_block + b->unk_144);
-		dumpm("unk_144->?          ", b, unk_xid);
+	const le_xid_t* ip_bm_xid = reinterpret_cast<const le_xid_t *>(m_block + b->sm_ip_bm_xid_offset);
+	const le_uint16_t* ip_bm = reinterpret_cast<const le_uint16_t *>(m_block + b->sm_ip_bitmap_offset);
+	const le_uint16_t* ip_bm_free_next = reinterpret_cast<const le_uint16_t *>(m_block + b->sm_ip_bm_free_next_offset);
+
+	for (k = 0; k < b->sm_ip_bm_size_in_blocks; k++) {
+		m_os << ip_bm_xid[k] << " " << ip_bm[k] << endl;
 	}
+	m_os << endl;
 
-	if (b->unk_148 != 0)
-	{
-		const le_uint64_t &unk_148 = *reinterpret_cast<const le_uint64_t *>(m_block + b->unk_148);
-		dumpm("unk_148->?          ", b, unk_148);
+	for (k = 0; k < b->sm_ip_bm_block_count; k++) {
+		m_os << k << " -> " << ip_bm_free_next[k] << endl;
 	}
-
-	// unk_14C and unk_154 also point to some data ...
-
-	/*
-
-	m_os << "0180 BID BmpHdr  : " << setw(16) << b->blockid_vol_bitmap_hdr << endl;
-	m_os << "..." << endl;
-	m_os << "09D8 Some XID    : " << setw(16) << b->some_xid_9D8 << endl;
-	m_os << "09E0             : " << setw(16) << b->unk_9E0 << endl;
-	for (k = 0; k < 0x10; k++)
-		m_os << setw(4) << (0x9E8 + 2 * k) << "             : " << setw(4) << b->unk_9E8[k] << endl;
-	for (k = 0; k < 0xBF && b->bid_bmp_hdr_list[k] != 0; k++)
-		m_os << setw(4) << (0xA08 + 8 * k) << "cib_oid      : " << setw(16) << b->bid_bmp_hdr_list[k] << endl;
-
-	*/
-#endif
+	m_os << endl;
 
 	m_os << endl;
 	DumpBlockHex();
 }
 
-void BlockDumper::DumpBlk_NR()
+void BlockDumper::DumpNxReaper()
 {
 	const nx_reaper_phys_t *nr = reinterpret_cast<const nx_reaper_phys_t *>(m_block);
 
@@ -1809,7 +1782,7 @@ void BlockDumper::DumpBlk_NR()
 	DumpBlockHex();
 }
 
-void BlockDumper::DumpBlk_NRL()
+void BlockDumper::DumpNxReapList()
 {
 	const nx_reap_list_phys_t *nrl = reinterpret_cast<const nx_reap_list_phys_t *>(m_block);
 	uint32_t k;
@@ -1841,7 +1814,7 @@ void BlockDumper::DumpBlk_NRL()
 	DumpBlockHex();
 }
 
-void BlockDumper::DumpBlk_JSDR()
+void BlockDumper::DumpEfiJumpstart()
 {
 	const nx_efi_jumpstart_t *js = reinterpret_cast<const nx_efi_jumpstart_t *>(m_block);
 
@@ -1861,7 +1834,7 @@ void BlockDumper::DumpBlk_JSDR()
 	DumpBlockHex();
 }
 
-void BlockDumper::DumpBlk_ER()
+void BlockDumper::DumpER()
 {
 	const er_state_phys_t *er = reinterpret_cast<const er_state_phys_t *>(m_block);
 
@@ -1906,7 +1879,7 @@ void BlockDumper::DumpBlk_ER()
 	DumpBlockHex();
 }
 
-void BlockDumper::DumpBlk_WBC()
+void BlockDumper::DumpWBC()
 {
 	const fusion_wbc_phys_t *wbc = reinterpret_cast<const fusion_wbc_phys_t *>(m_block);
 
@@ -1924,7 +1897,7 @@ void BlockDumper::DumpBlk_WBC()
 	// DumpBlockHex();
 }
 
-void BlockDumper::DumpBlk_WBCL()
+void BlockDumper::DumpWBCL()
 {
 	const fusion_wbc_list_phys_t *wbcl = reinterpret_cast<const fusion_wbc_list_phys_t *>(m_block);
 	uint32_t k;
@@ -1949,7 +1922,7 @@ void BlockDumper::DumpBlk_WBCL()
 	// DumpBlockHex();
 }
 
-void BlockDumper::DumpBlk_SnapMetaExt()
+void BlockDumper::DumpSnapMetaExt()
 {
 	const snap_meta_ext_obj_phys_t* sme = reinterpret_cast<const snap_meta_ext_obj_phys_t*>(m_block);
 
@@ -1962,7 +1935,7 @@ void BlockDumper::DumpBlk_SnapMetaExt()
 	DumpBlockHex();
 }
 
-void BlockDumper::DumpBlk_IntegrityMeta()
+void BlockDumper::DumpIntegrityMeta()
 {
 	const integrity_meta_phys_t* const im = reinterpret_cast<const integrity_meta_phys_t*>(m_block);
 
@@ -2077,7 +2050,7 @@ std::string BlockDumper::enumstr(uint64_t flag, const FlagDesc *desc)
 	return st;
 }
 
-const char * BlockDumper::GetNodeType(uint32_t type, uint32_t subtype)
+const char * BlockDumper::GetObjType(uint32_t type, uint32_t subtype)
 {
 	const char *typestr = "Unknown";
 	const char *names[0x21] = {
